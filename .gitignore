@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data and private uploads
+private_uploads/
+uploads/
+tmp/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Database and local state
+*.sqlite
+*.sqlite3
+*.db
+
+# Editor/OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Tool caches
+.claude/
+.cache/
+.eslintcache
+.nyc_output/

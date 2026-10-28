@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum AppRole {
+  USER
+  ROOMMATE_SEEKER
+  TENANT
+  PROPERTY_OWNER
+  MODERATOR
+  ADMIN
+}
+
+model User {
+  id               String      @id @default(uuid()) @db.Uuid
+  email            String?     @unique
+  phone            String?     @unique
+  passwordHash     String?     @map("password_hash")
+  status           UserStatus  @default(ACTIVE)
+  emailVerifiedAt   DateTime?   @map("email_verified_at")
+  phoneVerifiedAt   DateTime?   @map("phone_verified_at")
+  lastLoginAt       DateTime?   @map("last_login_at")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  roles            UserRole[]
+  profile          Profile?
+
+  @@map("users")
+}
+
+model UserRole {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      AppRole
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_roles")
+}
+
+model Profile {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @map("user_id") @db.Uuid
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  profilePhoto String?  @map("profile_photo")
+  bio          String?
+  occupation   String?
+  city         String?
+  state        String?
+  country      String   @default("Nigeria")
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+enum PropertyVerificationStatus {
+  PENDING
+  IN_REVIEW
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum PropertyStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum UnitAvailabilityStatus {
+  AVAILABLE
+  OCCUPIED
+  PENDING
+}
+
+model Property {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  ownerId            String                   @map("owner_id") @db.Uuid
+  propertyType       String                   @map("property_type")
+  title              String
+  description        String
+  address            String
+  city               String
+  state              String
+  lga                String?
+  area               String
+  latitude           Float?
+  longitude          Float?
+  verificationStatus PropertyVerificationStatus @default(PENDING) @map("verification_status")
+  status             PropertyStatus           @default(ACTIVE)
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  updatedAt          DateTime                 @updatedAt @map("updated_at")
+
+  units              PropertyUnit[]
+  listings           Listing[]
+
+  @@index([ownerId])
+  @@map("properties")
+}
+
+model PropertyUnit {
+  id               String               @id @default(uuid()) @db.Uuid
+  propertyId       String               @map("property_id") @db.Uuid
+  unitType         String               @map("unit_type")
+  name             String
+  bedroomCount     Int                  @map("bedroom_count")
+  bathroomCount    Int                  @map("bathroom_count")
+  rent             Int
+  serviceCharge    Int                  @map("service_charge")
+  deposit          Int
+  availabilityStatus UnitAvailabilityStatus @default(AVAILABLE) @map("availability_status")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  listings Listing[]
+
+  @@index([propertyId])
+  @@map("property_units")
+}
+
+model Listing {
+  id           String   @id @default(uuid()) @db.Uuid
+  propertyId   String?  @map("property_id") @db.Uuid
+  unitId       String?  @map("unit_id") @db.Uuid
+  createdBy    String   @map("created_by") @db.Uuid
+  listingType  String   @map("listing_type")
+  title        String
+  description  String
+  price        Int
+  billingPeriod String  @map("billing_period")
+  availableFrom DateTime @map("available_from")
+  status       String
+  featured     Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  unit     PropertyUnit? @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  images   ListingImage[]
+
+  @@index([propertyId])
+  @@index([unitId])
+  @@map("listings")
+}
+
+model ListingImage {
+  id         String   @id @default(uuid()) @db.Uuid
+  listingId  String   @map("listing_id") @db.Uuid
+  storageKey String   @map("storage_key")
+  url        String
+  type       String
+  sortOrder  Int      @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_images")
+}
